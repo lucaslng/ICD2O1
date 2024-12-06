@@ -35,12 +35,13 @@ WIN_SCORE = 2
 FONT_FILE = "ARCADE_N.TTF"
 
 # colors
-white=(255,255,255)
-black=(0,0,0)
-darkGray=(34,31,36)
-gray=(106,99,103)
-red=(245,110,100)
-blue=(6,186,221)
+class Colors(Enum):
+  WHITE=(255,255,255)
+  BLACK=(0,0,0)
+  DARKGRAY=(34,31,36)
+  GRAY=(106,99,103)
+  RED=(245,110,100)
+  BLUE=(6,186,221)
 
 # game states
 class GameState(Enum):
@@ -71,7 +72,7 @@ class Button:
       this.blitRect = this.innerRect
     else:
       this.font = pg.font.Font(FONT_FILE,this.fontSize)
-      this.blit = this.font.render(text,True,white)
+      this.blit = this.font.render(text,True,Colors.WHITE)
       this.blitRect = pg.Rect((this.innerRect.width-this.blit.get_width())//2+this.innerRect.x,((this.innerRect.height-this.blit.get_height())//2)+this.innerRect.y,*this.blit.get_size())
   
   def isHovered(this):
@@ -79,10 +80,10 @@ class Button:
   
   def draw(this):
     if this.isHovered():
-      pg.draw.rect(SURF,white,this.rect)
+      pg.draw.rect(SURF,Colors.WHITE,this.rect)
     else:
-      pg.draw.rect(SURF,gray,this.rect)
-    pg.draw.rect(SURF,black,this.innerRect)
+      pg.draw.rect(SURF,Colors.GRAY,this.rect)
+    pg.draw.rect(SURF,Colors.BLACK,this.innerRect)
     SURF.blit(this.blit,this.blitRect.topleft)
   
   def pressed(this):
@@ -111,7 +112,7 @@ def title():
   initButtons()
   
   while True:
-    SURF.fill(black)
+    SURF.fill(Colors.BLACK)
     
     drawTitle()
     playButton.draw()
@@ -251,8 +252,8 @@ def game():
   
   # draw scores
   def drawScores():
-    SURF.blit(font.render(str(redScore),True,white),(WIDTH*0.1,HEIGHT//2-SCORE_FONT_SIZE//2))
-    SURF.blit(font.render(str(blueScore),True,white),(WIDTH*0.8,HEIGHT//2-SCORE_FONT_SIZE//2))
+    SURF.blit(font.render(str(redScore),True,Colors.WHITE),(WIDTH*0.1,HEIGHT//2-SCORE_FONT_SIZE//2))
+    SURF.blit(font.render(str(blueScore),True,Colors.WHITE),(WIDTH*0.8,HEIGHT//2-SCORE_FONT_SIZE//2))
 
 # draw game over screen
   def drawGameOver():
@@ -276,7 +277,7 @@ def game():
     paddles=[paddleLeft,paddleRight,paddleUp,paddleDown]
     font = pg.font.Font("ARCADE_N.TTF",SCORE_FONT_SIZE)
     winnerFont = pg.font.Font("ARCADE_N.TTF",WINNER_FONT_SIZE)
-    gameOverText = font.render("Game Over",True,white)
+    gameOverText = font.render("Game Over",True,Colors.WHITE)
     gameOverMenuButton = Button(WIDTH//2,HEIGHT//2,GAME_OVER_BUTTON_WIDTH,GAME_OVER_BUTTON_HEIGHT,"MENU",GAME_OVER_BUTTON_BORDER_WIDTH,GameState.MENU)
 
   def detectCollision():
@@ -304,7 +305,7 @@ def game():
   initElements()
 
   while True:
-    SURF.fill(black)
+    SURF.fill(Colors.BLACK)
     
     if not isGameOver():
       drawScores()
@@ -346,7 +347,7 @@ def help():
   helpImage = pg.image.load("help.png")
   help2Image = pg.image.load("help2.png")
   while True:
-    SURF.fill(black)
+    SURF.fill(Colors.BLACK)
     
     SURF.blit(helpImage,(WIDTH//2-helpImage.get_width()//2,HEIGHT//5))
     
