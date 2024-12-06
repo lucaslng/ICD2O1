@@ -72,7 +72,7 @@ class Button:
       this.blitRect = this.innerRect
     else:
       this.font = pg.font.Font(FONT_FILE,this.fontSize)
-      this.blit = this.font.render(text,True,Colors.WHITE)
+      this.blit = this.font.render(text,True,Colors.WHITE.value)
       this.blitRect = pg.Rect((this.innerRect.width-this.blit.get_width())//2+this.innerRect.x,((this.innerRect.height-this.blit.get_height())//2)+this.innerRect.y,*this.blit.get_size())
   
   def isHovered(this):
@@ -80,10 +80,10 @@ class Button:
   
   def draw(this):
     if this.isHovered():
-      pg.draw.rect(SURF,Colors.WHITE,this.rect)
+      pg.draw.rect(SURF,Colors.WHITE.value,this.rect)
     else:
-      pg.draw.rect(SURF,Colors.GRAY,this.rect)
-    pg.draw.rect(SURF,Colors.BLACK,this.innerRect)
+      pg.draw.rect(SURF,Colors.GRAY.value,this.rect)
+    pg.draw.rect(SURF,Colors.BLACK.value,this.innerRect)
     SURF.blit(this.blit,this.blitRect.topleft)
   
   def pressed(this):
@@ -112,7 +112,7 @@ def title():
   initButtons()
   
   while True:
-    SURF.fill(Colors.BLACK)
+    SURF.fill(Colors.BLACK.value)
     
     drawTitle()
     playButton.draw()
@@ -202,7 +202,6 @@ def game():
 
   # paddle
   class Paddle(pg.sprite.Sprite):
-    global SURF,HEIGHT,PADDLE_SIZE,PADDLE_THICKNESS,PADDLE_PADDING,red,blue
     
     def __init__(this,location:PaddleLocation):
       super().__init__()
@@ -210,23 +209,23 @@ def game():
       this.location = location
       if location == PaddleLocation.LEFT:
         this.position = HEIGHT//2-PADDLE_SIZE//2
-        this.color = red
+        this.color = Colors.RED.value
         this.rect = pg.Rect(PADDLE_PADDING,this.position,PADDLE_THICKNESS,PADDLE_SIZE)
         this
         this.mask = pg.mask.Mask((PADDLE_THICKNESS,PADDLE_SIZE),True)
       elif location == PaddleLocation.RIGHT:
         this.position = HEIGHT//2-PADDLE_SIZE//2
-        this.color = blue
+        this.color = Colors.BLUE.value
         this.rect = pg.Rect(WIDTH-PADDLE_PADDING-PADDLE_THICKNESS,this.position,PADDLE_THICKNESS,PADDLE_SIZE)
         this.mask = pg.mask.Mask((PADDLE_THICKNESS,PADDLE_SIZE),True)
       elif location == PaddleLocation.UP:
         this.position = WIDTH//2-PADDLE_SIZE//2
-        this.color = blue
+        this.color = Colors.BLUE.value
         this.rect = pg.Rect(this.position,PADDLE_PADDING,PADDLE_SIZE,PADDLE_THICKNESS)
         this.mask = pg.mask.Mask((PADDLE_SIZE,PADDLE_THICKNESS),True)
       elif location == PaddleLocation.DOWN:
         this.position = WIDTH//2-PADDLE_SIZE//2
-        this.color = red
+        this.color = Colors.RED.value
         this.rect = pg.Rect(this.position,HEIGHT-PADDLE_PADDING-PADDLE_THICKNESS,PADDLE_SIZE,PADDLE_THICKNESS)
         this.mask = pg.mask.Mask((PADDLE_SIZE,PADDLE_THICKNESS),True)
     
@@ -252,8 +251,8 @@ def game():
   
   # draw scores
   def drawScores():
-    SURF.blit(font.render(str(redScore),True,Colors.WHITE),(WIDTH*0.1,HEIGHT//2-SCORE_FONT_SIZE//2))
-    SURF.blit(font.render(str(blueScore),True,Colors.WHITE),(WIDTH*0.8,HEIGHT//2-SCORE_FONT_SIZE//2))
+    SURF.blit(font.render(str(redScore),True,Colors.WHITE.value),(WIDTH*0.1,HEIGHT//2-SCORE_FONT_SIZE//2))
+    SURF.blit(font.render(str(blueScore),True,Colors.WHITE.value),(WIDTH*0.8,HEIGHT//2-SCORE_FONT_SIZE//2))
 
 # draw game over screen
   def drawGameOver():
@@ -277,7 +276,7 @@ def game():
     paddles=[paddleLeft,paddleRight,paddleUp,paddleDown]
     font = pg.font.Font("ARCADE_N.TTF",SCORE_FONT_SIZE)
     winnerFont = pg.font.Font("ARCADE_N.TTF",WINNER_FONT_SIZE)
-    gameOverText = font.render("Game Over",True,Colors.WHITE)
+    gameOverText = font.render("Game Over",True,Colors.WHITE.value)
     gameOverMenuButton = Button(WIDTH//2,HEIGHT//2,GAME_OVER_BUTTON_WIDTH,GAME_OVER_BUTTON_HEIGHT,"MENU",GAME_OVER_BUTTON_BORDER_WIDTH,GameState.MENU)
 
   def detectCollision():
@@ -293,10 +292,10 @@ def game():
   def isGameOver():
     global winnerText
     if redScore >= WIN_SCORE:
-      winnerText = winnerFont.render("Red Wins!",True,red)
+      winnerText = winnerFont.render("Red Wins!",True,Colors.RED.value)
       return True
     elif blueScore >= WIN_SCORE:
-      winnerText = winnerFont.render("Blue Wins!",True,blue)
+      winnerText = winnerFont.render("Blue Wins!",True,Colors.BLUE.value)
       return True
     return False
 
@@ -305,7 +304,7 @@ def game():
   initElements()
 
   while True:
-    SURF.fill(Colors.BLACK)
+    SURF.fill(Colors.BLACK.value)
     
     if not isGameOver():
       drawScores()
@@ -347,7 +346,7 @@ def help():
   helpImage = pg.image.load("help.png")
   help2Image = pg.image.load("help2.png")
   while True:
-    SURF.fill(Colors.BLACK)
+    SURF.fill(Colors.BLACK.value)
     
     SURF.blit(helpImage,(WIDTH//2-helpImage.get_width()//2,HEIGHT//5))
     
