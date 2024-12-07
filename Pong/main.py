@@ -66,7 +66,6 @@ class Button:
     SURF.blit(this.blit,this.blitRect.topleft)
   
   def pressed(this):
-    print(this.state.name, "button pressed")
     changeState(this.state)
 
 class PaddleLocation(Enum):
@@ -81,6 +80,7 @@ class Ball():
   DEFAULT_SIZE = 20
   size = DEFAULT_SIZE
   SPEED = 260/FPS
+  # random range excludes diagonal corners and angles directly perpendicular to paddles
   randrange = list(range(10,31)) + list(range(60,81)) + list(range(100,121)) + list(range(150,171)) + list(range(190,211)) + list(range(240,261)) + list(range(280,301)) + list(range(330,351))
   
   def __init__(this):
@@ -125,12 +125,9 @@ class Ball():
   def bounce(this,paddleLocation:PaddleLocation):
     dx = math.cos(this.angle)
     dy = math.sin(this.angle)
-    if paddleLocation == PaddleLocation.LEFT or paddleLocation == PaddleLocation.RIGHT:
-      dx = -dx
-    elif paddleLocation == PaddleLocation.UP or paddleLocation == PaddleLocation.DOWN:
-      dy = -dy
-    else:
-      print("Unknown paddle location", paddleLocation, "when bouncing")
+    match paddleLocation:
+      case PaddleLocation.LEFT | PaddleLocation.RIGHT: dx = -dx
+      case PaddleLocation.UP | PaddleLocation.DOWN: dy = -dy
     this.angle = math.atan2(dy,dx)
   
   def changeSize(this,size:int):
@@ -172,7 +169,7 @@ def menu():
       ball.bounce(PaddleLocation.RIGHT)
     elif ball.rect.bottom>=HEIGHT:
       ball.bounce(PaddleLocation.DOWN)
-    if ball.rect.x<=-10 or ball.rect.y<=-10 or ball.rect.right>=WIDTH+10 or ball.rect.bottom>=HEIGHT+10:
+    if ball.rect.x<=-10 or ball.rect.y<=-10 or ball.rect.right>=WIDTH+10 or ball.rect.bottom>=HEIGHT+10: # out of bounds for some reason
       ball.respawn()
         
   initTitle()
@@ -230,33 +227,35 @@ def game():
     
     def __init__(this,location:PaddleLocation):
       this.location = location
-      if location == PaddleLocation.LEFT:
-        this.position = HEIGHT//2-this.SIZE//2
-        this.color = Colors.RED.value
-        this.rect = pg.Rect(this.PADDING,this.position,this.THICKNESS,this.SIZE)
-        this
-        this.mask = pg.mask.Mask((this.THICKNESS,this.SIZE),True)
-      elif location == PaddleLocation.RIGHT:
-        this.position = HEIGHT//2-this.SIZE//2
-        this.color = Colors.BLUE.value
-        this.rect = pg.Rect(WIDTH-this.PADDING-this.THICKNESS,this.position,this.THICKNESS,this.SIZE)
-        this.mask = pg.mask.Mask((this.THICKNESS,this.SIZE),True)
-      elif location == PaddleLocation.UP:
-        this.position = WIDTH//2-this.SIZE//2
-        this.color = Colors.BLUE.value
-        this.rect = pg.Rect(this.position,this.PADDING,this.SIZE,this.THICKNESS)
-        this.mask = pg.mask.Mask((this.SIZE,this.THICKNESS),True)
-      elif location == PaddleLocation.DOWN:
-        this.position = WIDTH//2-this.SIZE//2
-        this.color = Colors.RED.value
-        this.rect = pg.Rect(this.position,HEIGHT-this.PADDING-this.THICKNESS,this.SIZE,this.THICKNESS)
-        this.mask = pg.mask.Mask((this.SIZE,this.THICKNESS),True)
+      match location:
+        case PaddleLocation.LEFT:
+          this.position = HEIGHT//2-this.SIZE//2
+          this.color = Colors.RED.value
+          this.rect = pg.Rect(this.PADDING,this.position,this.THICKNESS,this.SIZE)
+          this
+          this.mask = pg.mask.Mask((this.THICKNESS,this.SIZE),True)
+        case PaddleLocation.RIGHT:
+          this.position = HEIGHT//2-this.SIZE//2
+          this.color = Colors.BLUE.value
+          this.rect = pg.Rect(WIDTH-this.PADDING-this.THICKNESS,this.position,this.THICKNESS,this.SIZE)
+          this.mask = pg.mask.Mask((this.THICKNESS,this.SIZE),True)
+        case PaddleLocation.UP:
+          this.position = WIDTH//2-this.SIZE//2
+          this.color = Colors.BLUE.value
+          this.rect = pg.Rect(this.position,this.PADDING,this.SIZE,this.THICKNESS)
+          this.mask = pg.mask.Mask((this.SIZE,this.THICKNESS),True)
+        case PaddleLocation.DOWN:
+          this.position = WIDTH//2-this.SIZE//2
+          this.color = Colors.RED.value
+          this.rect = pg.Rect(this.position,HEIGHT-this.PADDING-this.THICKNESS,this.SIZE,this.THICKNESS)
+          this.mask = pg.mask.Mask((this.SIZE,this.THICKNESS),True)
     
     def _update(this):
-      if this.location == PaddleLocation.LEFT: this.rect = pg.Rect(this.PADDING,this.position,this.THICKNESS,this.SIZE)
-      elif this.location == PaddleLocation.RIGHT: this.rect = pg.Rect(WIDTH-this.PADDING-this.THICKNESS,this.position,this.THICKNESS,this.SIZE)
-      elif this.location == PaddleLocation.UP: this.rect = pg.Rect(this.position,this.PADDING,this.SIZE,this.THICKNESS)
-      elif this.location == PaddleLocation.DOWN: this.rect = pg.Rect(this.position,HEIGHT-this.PADDING-this.THICKNESS,this.SIZE,this.THICKNESS)
+      match this.location:
+        case PaddleLocation.LEFT: this.rect.update(this.PADDING,this.position,this.THICKNESS,this.SIZE)
+        case PaddleLocation.RIGHT: this.rect.update(WIDTH-this.PADDING-this.THICKNESS,this.position,this.THICKNESS,this.SIZE)
+        case PaddleLocation.UP: this.rect.update(this.position,this.PADDING,this.SIZE,this.THICKNESS)
+        case PaddleLocation.DOWN: this.rect.update(this.position,HEIGHT-this.PADDING-this.THICKNESS,this.SIZE,this.THICKNESS)
     
     def draw(this):
       pg.draw.rect(SURF,this.color,this.rect)
@@ -265,10 +264,11 @@ def game():
       if direction:
         this.position -= min(this.SPEED,this.position-this.PADDING_SIDE)
       else:
-        if this.location == PaddleLocation.LEFT or this.location == PaddleLocation.RIGHT:
-          this.position += min(this.SPEED,HEIGHT-this.position-this.SIZE-this.PADDING_SIDE)
-        else:
-          this.position += min(this.SPEED,WIDTH-this.position-this.SIZE-this.PADDING_SIDE)
+        match this.location:
+          case PaddleLocation.LEFT | PaddleLocation.RIGHT:
+            this.position += min(this.SPEED,HEIGHT-this.position-this.SIZE-this.PADDING_SIDE)
+          case PaddleLocation.UP | PaddleLocation.DOWN:
+            this.position += min(this.SPEED,WIDTH-this.position-this.SIZE-this.PADDING_SIDE)
       this._update()
   
   # draw scores
@@ -379,6 +379,7 @@ def game():
 
 # help loop
 def help():
+
   HELP_IMAGE_FILE = "help.png"
   HELP2_IMAGE_FILE = "help2.png"
   
@@ -405,13 +406,7 @@ def help():
 
 # main loop
 while True:
-  if gameState == GameState.MENU:
-    menu()
-  elif gameState == GameState.GAME:
-    game()
-  elif gameState == GameState.HELP:
-    help()
-  else:
-    print("Unknown game state", gameState, "exiting")
-    pg.quit()
-    sys.exit()
+  match gameState:
+    case GameState.MENU: menu()
+    case GameState.GAME: game()
+    case GameState.HELP: help()
