@@ -1,11 +1,20 @@
-from enum import Enum
+# Lucas Leung
+# Pong Graphics Assignment
+# Pong with a twist
+# 3 features:
+#   1. Ball stays still and flashes for ~1 second at the start of every round
+#   2. On screen timer
+#   3. Ball gets faster and faster as the round goes on for longer
+
+# imports
 import sys
 import pygame as pg
 from pygame.locals import *
 import random as rand
 import math
+from enum import Enum
 
-# global constants
+# global constants (can be changed to other reasonable values without affecting game)
 WIDTH = 600
 HEIGHT = 600
 FPS = 30
@@ -25,18 +34,11 @@ class GameState(Enum):
   MENU=0
   GAME=1
   HELP=2
-gameState = GameState.MENU
-def changeState(state=GameState.MENU):
+def changeState(state:GameState):
   global gameState
   gameState = state
 
-# pygame init
-pg.init()
-SURF = pg.display.set_mode((WIDTH, HEIGHT))
-pg.display.set_caption('Pong with a Twist!')
-clock = pg.time.Clock()
-
-# draw button with text or image
+# draw button with text or image that changes the game state
 class Button:
   def __init__(this,x:float,y:float,width:float,height:float,text:str,borderWidth:int,state:GameState,isImage:bool=False,fontSize=-1):
     this.text = text
@@ -68,33 +70,40 @@ class Button:
   def pressed(this):
     changeState(this.state)
 
+# 4 paddle locations
 class PaddleLocation(Enum):
   LEFT=0
   RIGHT=1
   UP=2
   DOWN=3
-    
+
+
   # ball
+
+# ball class
 class Ball():
   
   DEFAULT_SIZE = 20
   size = DEFAULT_SIZE
   SPEED = 260/FPS
-  # random range excludes diagonal corners and angles directly perpendicular to paddles
+  BALL_FILE = "ball.png"
+  
+  # random range excludes diagonal corners and angles near perpendicular to paddles
   randrange = list(range(10,31)) + list(range(60,81)) + list(range(100,121)) + list(range(150,171)) + list(range(190,211)) + list(range(240,261)) + list(range(280,301)) + list(range(330,351))
   
   def __init__(this):
-    this.image = pg.transform.smoothscale(pg.image.load("ball.png"),(this.size,this.size))
-    this.angle = math.radians(this._genAngle())
+    this.image = pg.transform.smoothscale(pg.image.load(this.BALL_FILE),(this.size,this.size))
+    this.angle = math.radians(this.__genAngle())
     this.rect = this.image.get_rect()
     this.rect.x = rand.randint(WIDTH//2-50,WIDTH//2+50-this.size)
     this.rect.y = rand.randint(HEIGHT//2-50,HEIGHT//2+50-this.size)
     this.mask = pg.mask.from_surface(this.image)
-    
+  
   def move(this):
     this.rect.x += this.SPEED * math.cos(this.angle)
     this.rect.y += this.SPEED * math.sin(this.angle)
 
+  # check if ball hit the wall and changes the score accordingly
   def isOut(this) -> bool:
     global redScore,blueScore
     if this.rect.x<=0:
@@ -111,17 +120,19 @@ class Ball():
       return True
     return False
   
-  def _genAngle(this) -> int:
+  def __genAngle(this) -> int:
     return rand.choice(this.randrange)
   
+  # reset ball size, location, and angle
   def respawn(this):
     this.size = this.DEFAULT_SIZE
     this.rect.topleft = (rand.randint(WIDTH//2-50,WIDTH//2+50-this.size),rand.randint(HEIGHT//2-50,HEIGHT//2+50-this.size))
-    this.angle = math.radians(this._genAngle())
+    this.angle = math.radians(this.__genAngle())
   
   def draw(this):
     SURF.blit(this.image,this.rect)
   
+  # change angle of ball based on which paddle the ball hit
   def bounce(this,paddleLocation:PaddleLocation):
     dx = math.cos(this.angle)
     dy = math.sin(this.angle)
@@ -132,9 +143,8 @@ class Ball():
   
   def changeSize(this,size:int):
     this.size = size
-    this.image = pg.transform.smoothscale(pg.image.load("ball.png"),(this.size,this.size))
+    this.image = pg.transform.smoothscale(pg.image.load(this.BALL_FILE),(this.size,this.size))
     this.rect.update(this.rect.x,this.rect.y,*this.image.get_size())
-
 
 # menu loop
 def menu():
@@ -160,6 +170,7 @@ def menu():
     helpButton = Button(WIDTH//2,HEIGHT*0.7,MENU_BUTTONS_WIDTH,HELP_BUTTON_HEIGHT,"How to play",HELP_BUTTON_BORDER_WIDTH,GameState.HELP,fontSize=26 )
     buttons = (playButton,helpButton)
   
+  # bounces the ball on the walls instead of paddles in the menu
   def ballWallBounce():
     if ball.rect.x<=0:
       ball.bounce(PaddleLocation.LEFT)
@@ -197,6 +208,7 @@ def menu():
           if button.isHovered():
             button.pressed()
             return
+        # random fun thing that makes the menu ball bigger when you click on it
         if ball.rect.collidepoint(pg.mouse.get_pos()):
           print(ball.rect)
           ball.changeSize(ball.size+3)
@@ -208,6 +220,7 @@ def menu():
 def game():
   
   SCORE_FONT_SIZE = 50
+  WIN_SCORE = 10
 
   # scores
   def resetScore():
@@ -222,7 +235,7 @@ def game():
     THICKNESS = 10
     PADDING = 10
     SPEED = 520/FPS
-    PADDING_SIDE = 14
+    PADDING_SIDE = PADDING*2 # ensures the paddles stop and never overlap each other
     previousCollisionTime = 0
     
     def __init__(this,location:PaddleLocation):
@@ -232,7 +245,6 @@ def game():
           this.position = HEIGHT//2-this.SIZE//2
           this.color = Colors.RED.value
           this.rect = pg.Rect(this.PADDING,this.position,this.THICKNESS,this.SIZE)
-          this
           this.mask = pg.mask.Mask((this.THICKNESS,this.SIZE),True)
         case PaddleLocation.RIGHT:
           this.position = HEIGHT//2-this.SIZE//2
@@ -260,6 +272,7 @@ def game():
     def draw(this):
       pg.draw.rect(SURF,this.color,this.rect)
     
+    # move paddle based on true or false
     def move(this,direction:bool):
       if direction:
         this.position -= min(this.SPEED,this.position-this.PADDING_SIDE)
@@ -270,6 +283,14 @@ def game():
           case PaddleLocation.UP | PaddleLocation.DOWN:
             this.position += min(this.SPEED,WIDTH-this.position-this.SIZE-this.PADDING_SIDE)
       this._update()
+    
+    # used for debugging
+    # def __repr__(this):
+    #   match this.location:
+    #     case PaddleLocation.LEFT: return "left paddle"
+    #     case PaddleLocation.RIGHT: return "right paddle"
+    #     case PaddleLocation.UP: return "up paddle"
+    #     case PaddleLocation.DOWN: return "down paddle"
   
   # draw scores
   def drawScores():
@@ -310,29 +331,32 @@ def game():
       if ball.mask.overlap(paddle.mask,offset) and pg.time.get_ticks() - paddle.previousCollisionTime > 180:
         # collision time prevents ball getting stuck
         ball.bounce(paddle.location)
+        # print("ball bounced on", paddle)
         paddle.previousCollisionTime = pg.time.get_ticks()
   
-  def isGameOver() -> bool:
+  def renderWinnerText():
     global winnerText
-    WIN_SCORE = 10
     if redScore >= WIN_SCORE:
       winnerText = winnerFont.render("Red Wins!",True,Colors.RED.value)
-      return True
     elif blueScore >= WIN_SCORE:
       winnerText = winnerFont.render("Blue Wins!",True,Colors.BLUE.value)
-      return True
-    return False
+  
+  def isGameOver() -> bool:
+    return redScore >= WIN_SCORE or blueScore >= WIN_SCORE
 
   # init elements
   resetScore()
   initElements()
-  flashingTime = pg.time.get_ticks() + 500 # flash for longer on first round
+  roundStartTime = pg.time.get_ticks()
   
   while True:
     SURF.fill(Colors.BLACK.value)
     keys = pg.key.get_pressed()
     
-    if not isGameOver():
+    if isGameOver():
+      renderWinnerText()
+      drawGameOver()
+    else:
       drawScores()
       drawPaddles()
       
@@ -346,29 +370,26 @@ def game():
       if keys[pg.K_RIGHT]: paddleUp.move(False)
       
       # if ball just respawned, flash the ball
-      if pg.time.get_ticks() - flashingTime > 1300:
+      if pg.time.get_ticks() - roundStartTime > 1300:
         ball.draw()
         ball.move()
-      elif (pg.time.get_ticks() - flashingTime) % 500 < 300: # the ball is shown for 300ms for every 500ms
+      elif (pg.time.get_ticks() - roundStartTime) % 500 < 300: # the ball is shown for 300ms for every 500ms
         ball.draw()
       
       # reset ball when out
       if ball.isOut():
         ball.respawn()
-        flashingTime = pg.time.get_ticks()
+        roundStartTime = pg.time.get_ticks() # reset round start time when new round starts
       
       # detect if ball is hitting paddle
       detectCollision()
-    
-    else: # game over
-      drawGameOver()
-    
+
     for event in pg.event.get():
-      if pg.mouse.get_pressed()[0] and gameOverMenuButton.isHovered():
+      if isGameOver() and pg.mouse.get_pressed()[0] and gameOverMenuButton.isHovered():
         gameOverMenuButton.pressed()
         return
       if keys[pg.K_ESCAPE]:
-          changeState()
+          changeState(GameState.MENU)
           return
       if event.type == QUIT:
           pg.quit()
@@ -389,13 +410,14 @@ def help():
   while True:
     SURF.fill(Colors.BLACK.value)
     
+    # draw instruction text
     SURF.blit(helpImage,(WIDTH//2-helpImage.get_width()//2,HEIGHT*0.2))
     SURF.blit(help2Image,(WIDTH//2-help2Image.get_width()//2,HEIGHT*0.25+helpImage.get_height()))
     
     keys = pg.key.get_pressed()
     for event in pg.event.get():
       if keys[pg.K_ESCAPE]:
-        changeState()
+        changeState(GameState.MENU)
         return
       if event.type == QUIT:
         pg.quit()
@@ -404,9 +426,21 @@ def help():
     pg.display.flip()
     clock.tick(FPS)  
 
-# main loop
-while True:
-  match gameState:
-    case GameState.MENU: menu()
-    case GameState.GAME: game()
-    case GameState.HELP: help()
+# main function
+def main():
+  global SURF,clock
+  # pygame init
+  pg.init()
+  SURF = pg.display.set_mode((WIDTH, HEIGHT))
+  pg.display.set_caption('Pong with a Twist!')
+  clock = pg.time.Clock()
+  changeState(GameState.MENU)
+
+  # main loop
+  while True:
+    match gameState:
+      case GameState.MENU: menu()
+      case GameState.GAME: game()
+      case GameState.HELP: help()
+
+main()
