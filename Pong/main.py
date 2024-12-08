@@ -16,6 +16,7 @@ from enum import Enum
 # global constants (can be changed to other reasonable values without affecting game)
 WINDOW_SIZE = 600
 FPS = 30
+
 FONT_FILE = "font.ttf"
 
 # colors
