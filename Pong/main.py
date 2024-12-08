@@ -337,7 +337,7 @@ def game():
     paddleUp = Paddle(PaddleLocation.UP)
     paddleDown = Paddle(PaddleLocation.DOWN)
     ball = Ball()
-    paddles=[paddleLeft,paddleRight,paddleUp,paddleDown]
+    paddles=(paddleLeft,paddleRight,paddleUp,paddleDown)
     font = pg.font.Font(FONT_FILE,SCORE_FONT_SIZE)
     winnerFont = pg.font.Font(FONT_FILE,WINNER_FONT_SIZE)
     gameOverText = font.render("Game Over",True,Colors.WHITE.value)
