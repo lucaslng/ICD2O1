@@ -92,7 +92,14 @@ class Ball():
   speed = DEFAULT_SPEED
   
   # random range excludes diagonal corners and angles near perpendicular to paddles
-  RANDRANGE = list(range(10,31)) + list(range(60,81)) + list(range(100,121)) + list(range(150,171)) + list(range(190,211)) + list(range(240,261)) + list(range(280,301)) + list(range(330,351))
+  RANDRANGE = list(range(10,31)) \
+            + list(range(60,81)) \
+            + list(range(100,121)) \
+            + list(range(150,171)) \
+            + list(range(190,211)) \
+            + list(range(240,261)) \
+            + list(range(280,301)) \
+            + list(range(330,351))
   
   def __init__(this):
     this.image = pg.transform.smoothscale(pg.image.load(this.BALL_FILE),(this.size,this.size))
