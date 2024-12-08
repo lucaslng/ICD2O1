@@ -91,7 +91,7 @@ class Ball():
   speed = DEFAULT_SPEED
   
   # random range excludes diagonal corners and angles near perpendicular to paddles
-  randrange = list(range(10,31)) + list(range(60,81)) + list(range(100,121)) + list(range(150,171)) + list(range(190,211)) + list(range(240,261)) + list(range(280,301)) + list(range(330,351))
+  RANDRANGE = list(range(10,31)) + list(range(60,81)) + list(range(100,121)) + list(range(150,171)) + list(range(190,211)) + list(range(240,261)) + list(range(280,301)) + list(range(330,351))
   
   def __init__(this):
     this.image = pg.transform.smoothscale(pg.image.load(this.BALL_FILE),(this.size,this.size))
@@ -124,7 +124,7 @@ class Ball():
   
   # generate 1 angle from possible angles
   def __genAngle(this) -> int:
-    return choice(this.randrange)
+    return choice(this.RANDRANGE)
   
   # reset ball size, location, and angle
   def respawn(this):
@@ -338,7 +338,7 @@ def game():
   def detectCollision():
     for paddle in paddles:
       offset = paddle.rect.x - ball.rect.x, paddle.rect.y - ball.rect.y
-      if ball.mask.overlap(paddle.mask,offset) and pg.time.get_ticks() - paddle.previousCollisionTime > 180:
+      if ball.mask.overlap(paddle.mask,offset) and pg.time.get_ticks() - paddle.previousCollisionTime > 200:
         # collision time prevents ball getting stuck
         ball.bounce(paddle.location)
         paddle.previousCollisionTime = pg.time.get_ticks()
