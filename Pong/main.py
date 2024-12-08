@@ -1,22 +1,20 @@
 # Lucas Leung
-# Pong Graphics Assignment
-# Pong with a twist
+# Pong Graphics Assignment - Pong with a twist
 # 3 features:
-#   1. Ball stays still and flashes for ~1 second at the start of every round
-#   2. On screen timer
-#   3. Ball gets faster and faster as the round goes on for longer
+#   1. Ball stays still and flashes at the start of every round
+#   2. On screen countdown timer
+#   3. Ball gets faster and faster as the round goes on for longer (1.1x every 3s)
 
 # imports
 import sys
 import pygame as pg
 from pygame.locals import *
-import random as rand
-import math
+from random import randint,choice
+from math import radians,cos,sin,atan2
 from enum import Enum
 
 # global constants (can be changed to other reasonable values without affecting game)
-WIDTH = 600
-HEIGHT = 600
+WINDOW_SIZE = 600
 FPS = 30
 FONT_FILE = "font.ttf"
 
@@ -84,24 +82,28 @@ class PaddleLocation(Enum):
 class Ball():
   
   DEFAULT_SIZE = 20
-  size = DEFAULT_SIZE
-  SPEED = 260/FPS
+  DEFAULT_SPEED = 260/FPS
+  FLASH_MS = 1300
+  SPEED_INCREASE_FACTOR = 1.1
+  SPEED_INCREASE_MS = 3000
   BALL_FILE = "ball.png"
+  size = DEFAULT_SIZE
+  speed = DEFAULT_SPEED
   
   # random range excludes diagonal corners and angles near perpendicular to paddles
   randrange = list(range(10,31)) + list(range(60,81)) + list(range(100,121)) + list(range(150,171)) + list(range(190,211)) + list(range(240,261)) + list(range(280,301)) + list(range(330,351))
   
   def __init__(this):
     this.image = pg.transform.smoothscale(pg.image.load(this.BALL_FILE),(this.size,this.size))
-    this.angle = math.radians(this.__genAngle())
+    this.angle = radians(this.__genAngle())
     this.rect = this.image.get_rect()
-    this.rect.x = rand.randint(WIDTH//2-50,WIDTH//2+50-this.size)
-    this.rect.y = rand.randint(HEIGHT//2-50,HEIGHT//2+50-this.size)
+    this.rect.x = randint(WINDOW_SIZE//2-50,WINDOW_SIZE//2+50-this.size)
+    this.rect.y = randint(WINDOW_SIZE//2-50,WINDOW_SIZE//2+50-this.size)
     this.mask = pg.mask.from_surface(this.image)
   
   def move(this):
-    this.rect.x += this.SPEED * math.cos(this.angle)
-    this.rect.y += this.SPEED * math.sin(this.angle)
+    this.rect.x += this.speed * cos(this.angle)
+    this.rect.y += this.speed * sin(this.angle)
 
   # check if ball hit the wall and changes the score accordingly
   def isOut(this) -> bool:
@@ -112,39 +114,44 @@ class Ball():
     elif this.rect.y<=0:
       redScore += 1
       return True
-    elif this.rect.right>=WIDTH:
+    elif this.rect.right>=WINDOW_SIZE:
       redScore += 1
       return True
-    elif this.rect.bottom>=HEIGHT:
+    elif this.rect.bottom>=WINDOW_SIZE:
       blueScore += 1
       return True
     return False
   
+  # generate 1 angle from possible angles
   def __genAngle(this) -> int:
-    return rand.choice(this.randrange)
+    return choice(this.randrange)
   
   # reset ball size, location, and angle
   def respawn(this):
     this.size = this.DEFAULT_SIZE
-    this.rect.topleft = (rand.randint(WIDTH//2-50,WIDTH//2+50-this.size),rand.randint(HEIGHT//2-50,HEIGHT//2+50-this.size))
-    this.angle = math.radians(this.__genAngle())
+    this.rect.topleft = (randint(WINDOW_SIZE//2-50,WINDOW_SIZE//2+50-this.size),randint(WINDOW_SIZE//2-50,WINDOW_SIZE//2+50-this.size))
+    this.angle = radians(this.__genAngle())
+    this.speed = this.DEFAULT_SPEED
   
   def draw(this):
     SURF.blit(this.image,this.rect)
   
   # change angle of ball based on which paddle the ball hit
   def bounce(this,paddleLocation:PaddleLocation):
-    dx = math.cos(this.angle)
-    dy = math.sin(this.angle)
+    dx = cos(this.angle)
+    dy = sin(this.angle)
     match paddleLocation:
       case PaddleLocation.LEFT | PaddleLocation.RIGHT: dx = -dx
       case PaddleLocation.UP | PaddleLocation.DOWN: dy = -dy
-    this.angle = math.atan2(dy,dx)
+    this.angle = atan2(dy,dx)
   
   def changeSize(this,size:int):
     this.size = size
     this.image = pg.transform.smoothscale(pg.image.load(this.BALL_FILE),(this.size,this.size))
     this.rect.update(this.rect.x,this.rect.y,*this.image.get_size())
+  
+  def increaseSpeed(this):
+    this.speed *= this.SPEED_INCREASE_FACTOR
 
 # menu loop
 def menu():
@@ -153,7 +160,7 @@ def menu():
     global titleImage,titleRect
     TITLE_WIDTH = 332
     TITLE_HEIGHT = 102
-    titleRect = pg.Rect(WIDTH//2-TITLE_WIDTH//2,HEIGHT//5,TITLE_WIDTH,TITLE_HEIGHT)
+    titleRect = pg.Rect(WINDOW_SIZE//2-TITLE_WIDTH//2,WINDOW_SIZE//5,TITLE_WIDTH,TITLE_HEIGHT)
     titleImage = pg.transform.smoothscale(pg.image.load("title.png"),(TITLE_WIDTH,TITLE_HEIGHT))
   
   def drawTitle():
@@ -166,8 +173,8 @@ def menu():
     PLAY_BUTTON_BORDER_WIDTH = 10
     HELP_BUTTON_HEIGHT = 80
     HELP_BUTTON_BORDER_WIDTH = 10
-    playButton = Button(WIDTH//2,HEIGHT//2,MENU_BUTTONS_WIDTH,PLAY_BUTTON_HEIGHT,"play.png",PLAY_BUTTON_BORDER_WIDTH,GameState.GAME,True)
-    helpButton = Button(WIDTH//2,HEIGHT*0.7,MENU_BUTTONS_WIDTH,HELP_BUTTON_HEIGHT,"How to play",HELP_BUTTON_BORDER_WIDTH,GameState.HELP,fontSize=26 )
+    playButton = Button(WINDOW_SIZE//2,WINDOW_SIZE//2,MENU_BUTTONS_WIDTH,PLAY_BUTTON_HEIGHT,"play.png",PLAY_BUTTON_BORDER_WIDTH,GameState.GAME,True)
+    helpButton = Button(WINDOW_SIZE//2,WINDOW_SIZE*0.7,MENU_BUTTONS_WIDTH,HELP_BUTTON_HEIGHT,"How to play",HELP_BUTTON_BORDER_WIDTH,GameState.HELP,fontSize=26 )
     buttons = (playButton,helpButton)
   
   # bounces the ball on the walls instead of paddles in the menu
@@ -176,11 +183,11 @@ def menu():
       ball.bounce(PaddleLocation.LEFT)
     elif ball.rect.y<=0:
       ball.bounce(PaddleLocation.UP)
-    elif ball.rect.right>=WIDTH:
+    elif ball.rect.right>=WINDOW_SIZE:
       ball.bounce(PaddleLocation.RIGHT)
-    elif ball.rect.bottom>=HEIGHT:
+    elif ball.rect.bottom>=WINDOW_SIZE:
       ball.bounce(PaddleLocation.DOWN)
-    if ball.rect.x<=-10 or ball.rect.y<=-10 or ball.rect.right>=WIDTH+10 or ball.rect.bottom>=HEIGHT+10: # out of bounds for some reason
+    if ball.rect.x<=-10 or ball.rect.y<=-10 or ball.rect.right>=WINDOW_SIZE+10 or ball.rect.bottom>=WINDOW_SIZE+10: # out of bounds for some reason
       ball.respawn()
         
   initTitle()
@@ -221,6 +228,7 @@ def game():
   
   SCORE_FONT_SIZE = 50
   WIN_SCORE = 10
+  MAX_GAME_TIME = 120
 
   # scores
   def resetScore():
@@ -231,7 +239,7 @@ def game():
   # paddle
   class Paddle():
     
-    SIZE = 70
+    SIZE = WINDOW_SIZE*0.14
     THICKNESS = 10
     PADDING = 10
     SPEED = 520/FPS
@@ -242,32 +250,32 @@ def game():
       this.location = location
       match location:
         case PaddleLocation.LEFT:
-          this.position = HEIGHT//2-this.SIZE//2
+          this.position = WINDOW_SIZE//2-this.SIZE//2
           this.color = Colors.RED.value
           this.rect = pg.Rect(this.PADDING,this.position,this.THICKNESS,this.SIZE)
           this.mask = pg.mask.Mask((this.THICKNESS,this.SIZE),True)
         case PaddleLocation.RIGHT:
-          this.position = HEIGHT//2-this.SIZE//2
+          this.position = WINDOW_SIZE//2-this.SIZE//2
           this.color = Colors.BLUE.value
-          this.rect = pg.Rect(WIDTH-this.PADDING-this.THICKNESS,this.position,this.THICKNESS,this.SIZE)
+          this.rect = pg.Rect(WINDOW_SIZE-this.PADDING-this.THICKNESS,this.position,this.THICKNESS,this.SIZE)
           this.mask = pg.mask.Mask((this.THICKNESS,this.SIZE),True)
         case PaddleLocation.UP:
-          this.position = WIDTH//2-this.SIZE//2
+          this.position = WINDOW_SIZE//2-this.SIZE//2
           this.color = Colors.BLUE.value
           this.rect = pg.Rect(this.position,this.PADDING,this.SIZE,this.THICKNESS)
           this.mask = pg.mask.Mask((this.SIZE,this.THICKNESS),True)
         case PaddleLocation.DOWN:
-          this.position = WIDTH//2-this.SIZE//2
+          this.position = WINDOW_SIZE//2-this.SIZE//2
           this.color = Colors.RED.value
-          this.rect = pg.Rect(this.position,HEIGHT-this.PADDING-this.THICKNESS,this.SIZE,this.THICKNESS)
+          this.rect = pg.Rect(this.position,WINDOW_SIZE-this.PADDING-this.THICKNESS,this.SIZE,this.THICKNESS)
           this.mask = pg.mask.Mask((this.SIZE,this.THICKNESS),True)
     
     def _update(this):
       match this.location:
         case PaddleLocation.LEFT: this.rect.update(this.PADDING,this.position,this.THICKNESS,this.SIZE)
-        case PaddleLocation.RIGHT: this.rect.update(WIDTH-this.PADDING-this.THICKNESS,this.position,this.THICKNESS,this.SIZE)
+        case PaddleLocation.RIGHT: this.rect.update(WINDOW_SIZE-this.PADDING-this.THICKNESS,this.position,this.THICKNESS,this.SIZE)
         case PaddleLocation.UP: this.rect.update(this.position,this.PADDING,this.SIZE,this.THICKNESS)
-        case PaddleLocation.DOWN: this.rect.update(this.position,HEIGHT-this.PADDING-this.THICKNESS,this.SIZE,this.THICKNESS)
+        case PaddleLocation.DOWN: this.rect.update(this.position,WINDOW_SIZE-this.PADDING-this.THICKNESS,this.SIZE,this.THICKNESS)
     
     def draw(this):
       pg.draw.rect(SURF,this.color,this.rect)
@@ -279,28 +287,30 @@ def game():
       else:
         match this.location:
           case PaddleLocation.LEFT | PaddleLocation.RIGHT:
-            this.position += min(this.SPEED,HEIGHT-this.position-this.SIZE-this.PADDING_SIDE)
+            this.position += min(this.SPEED,WINDOW_SIZE-this.position-this.SIZE-this.PADDING_SIDE)
           case PaddleLocation.UP | PaddleLocation.DOWN:
-            this.position += min(this.SPEED,WIDTH-this.position-this.SIZE-this.PADDING_SIDE)
+            this.position += min(this.SPEED,WINDOW_SIZE-this.position-this.SIZE-this.PADDING_SIDE)
       this._update()
-    
-    # used for debugging
-    # def __repr__(this):
-    #   match this.location:
-    #     case PaddleLocation.LEFT: return "left paddle"
-    #     case PaddleLocation.RIGHT: return "right paddle"
-    #     case PaddleLocation.UP: return "up paddle"
-    #     case PaddleLocation.DOWN: return "down paddle"
   
   # draw scores
   def drawScores():
-    SURF.blit(font.render(str(redScore),True,Colors.WHITE.value),(WIDTH*0.1,HEIGHT//2-SCORE_FONT_SIZE//2))
-    SURF.blit(font.render(str(blueScore),True,Colors.WHITE.value),(WIDTH*0.8,HEIGHT//2-SCORE_FONT_SIZE//2))
+    redScoreRender = font.render(str(redScore),True,Colors.WHITE.value)
+    blueScoreRender = font.render(str(blueScore),True,Colors.WHITE.value)
+    SURF.blit(redScoreRender,(WINDOW_SIZE*0.1,WINDOW_SIZE//2-redScoreRender.get_height()//2))
+    SURF.blit(blueScoreRender,(WINDOW_SIZE-(WINDOW_SIZE*0.1+blueScoreRender.get_width()),WINDOW_SIZE//2-blueScoreRender.get_height()//2))
 
-# draw game over screen
+  # draw timer
+  def drawTimer():
+    m,s = divmod(MAX_GAME_TIME-(gameTime//1000),60)
+    timestr = f"{m}:{s:02d}"
+    timestrRender = font.render(timestr,True,Colors.WHITE.value)
+    SURF.blit(timestrRender,(WINDOW_SIZE//2-timestrRender.get_width()//2,WINDOW_SIZE//2-timestrRender.get_height()//2))
+
+  # draw game over screen
   def drawGameOver():
-    SURF.blit(gameOverText,(WIDTH//2-gameOverText.get_width()//2,HEIGHT*0.2))
-    SURF.blit(winnerText,(WIDTH//2-winnerText.get_width()//2,HEIGHT*0.4))
+    SURF.blit(gameOverText,(WINDOW_SIZE//2-gameOverText.get_width()//2,WINDOW_SIZE*0.2))
+    winnerTextRender = renderWinnerText()
+    SURF.blit(winnerTextRender,(WINDOW_SIZE//2-winnerTextRender.get_width()//2,WINDOW_SIZE*0.4))
     gameOverMenuButton.draw()
   
   # element functions
@@ -323,7 +333,7 @@ def game():
     font = pg.font.Font(FONT_FILE,SCORE_FONT_SIZE)
     winnerFont = pg.font.Font(FONT_FILE,WINNER_FONT_SIZE)
     gameOverText = font.render("Game Over",True,Colors.WHITE.value)
-    gameOverMenuButton = Button(WIDTH//2,HEIGHT*0.6,GAME_OVER_BUTTON_WIDTH,GAME_OVER_BUTTON_HEIGHT,"MENU",GAME_OVER_BUTTON_BORDER_WIDTH,GameState.MENU)
+    gameOverMenuButton = Button(WINDOW_SIZE//2,WINDOW_SIZE*0.6,GAME_OVER_BUTTON_WIDTH,GAME_OVER_BUTTON_HEIGHT,"MENU",GAME_OVER_BUTTON_BORDER_WIDTH,GameState.MENU)
 
   def detectCollision():
     for paddle in paddles:
@@ -331,15 +341,15 @@ def game():
       if ball.mask.overlap(paddle.mask,offset) and pg.time.get_ticks() - paddle.previousCollisionTime > 180:
         # collision time prevents ball getting stuck
         ball.bounce(paddle.location)
-        # print("ball bounced on", paddle)
         paddle.previousCollisionTime = pg.time.get_ticks()
   
-  def renderWinnerText():
-    global winnerText
-    if redScore >= WIN_SCORE:
-      winnerText = winnerFont.render("Red Wins!",True,Colors.RED.value)
-    elif blueScore >= WIN_SCORE:
-      winnerText = winnerFont.render("Blue Wins!",True,Colors.BLUE.value)
+  def renderWinnerText() -> pg.surface.Surface:
+    if redScore > blueScore:
+      return winnerFont.render("Red Wins!",True,Colors.RED.value)
+    elif blueScore > redScore:
+      return winnerFont.render("Blue Wins!",True,Colors.BLUE.value)
+    else:
+      return winnerFont.render("Tie!",True,Colors.WHITE.value)
   
   def isGameOver() -> bool:
     return redScore >= WIN_SCORE or blueScore >= WIN_SCORE
@@ -347,17 +357,20 @@ def game():
   # init elements
   resetScore()
   initElements()
-  roundStartTime = pg.time.get_ticks()
+  pg.time.set_timer(101,ball.SPEED_INCREASE_MS) # timer for speed increase
+  pg.time.set_timer(102,100) # round time
+  roundTime = 0
+  gameTime = 0
   
   while True:
     SURF.fill(Colors.BLACK.value)
     keys = pg.key.get_pressed()
     
-    if isGameOver():
-      renderWinnerText()
+    if isGameOver() or gameTime >= MAX_GAME_TIME*1000:
       drawGameOver()
     else:
       drawScores()
+      drawTimer()
       drawPaddles()
       
       if keys[pg.K_w]: paddleLeft.move(True)
@@ -370,30 +383,36 @@ def game():
       if keys[pg.K_RIGHT]: paddleUp.move(False)
       
       # if ball just respawned, flash the ball
-      if pg.time.get_ticks() - roundStartTime > 1300:
+      if roundTime > ball.FLASH_MS:
         ball.draw()
         ball.move()
-      elif (pg.time.get_ticks() - roundStartTime) % 500 < 300: # the ball is shown for 300ms for every 500ms
+      elif roundTime % 500 < 300: # the ball is shown for 300ms for every 500ms
         ball.draw()
       
       # reset ball when out
       if ball.isOut():
         ball.respawn()
-        roundStartTime = pg.time.get_ticks() # reset round start time when new round starts
+        pg.time.set_timer(102,100)
+        roundTime = 0 # reset round time when new round starts
       
       # detect if ball is hitting paddle
       detectCollision()
 
     for event in pg.event.get():
+      if event.type == QUIT:
+          pg.quit()
+          sys.exit()
       if isGameOver() and pg.mouse.get_pressed()[0] and gameOverMenuButton.isHovered():
         gameOverMenuButton.pressed()
         return
       if keys[pg.K_ESCAPE]:
           changeState(GameState.MENU)
           return
-      if event.type == QUIT:
-          pg.quit()
-          sys.exit()
+      if event.type == 101 and roundTime > ball.FLASH_MS:
+        ball.increaseSpeed()
+      if event.type == 102:
+        roundTime += 100
+        if roundTime > ball.FLASH_MS: gameTime += 100 # don't increment game time when the ball is flashing
 
     pg.display.flip()
     clock.tick(FPS)  
@@ -404,15 +423,15 @@ def help():
   HELP_IMAGE_FILE = "help.png"
   HELP2_IMAGE_FILE = "help2.png"
   
-  helpImage = pg.transform.smoothscale(pg.image.load(HELP_IMAGE_FILE),(WIDTH*0.936,HEIGHT*0.243))
-  help2Image = pg.transform.smoothscale(pg.image.load(HELP2_IMAGE_FILE),(WIDTH*0.929,HEIGHT*0.262))
+  helpImage = pg.transform.smoothscale(pg.image.load(HELP_IMAGE_FILE),(WINDOW_SIZE*0.936,WINDOW_SIZE*0.243))
+  help2Image = pg.transform.smoothscale(pg.image.load(HELP2_IMAGE_FILE),(WINDOW_SIZE*0.929,WINDOW_SIZE*0.262))
   
   while True:
     SURF.fill(Colors.BLACK.value)
     
     # draw instruction text
-    SURF.blit(helpImage,(WIDTH//2-helpImage.get_width()//2,HEIGHT*0.2))
-    SURF.blit(help2Image,(WIDTH//2-help2Image.get_width()//2,HEIGHT*0.25+helpImage.get_height()))
+    SURF.blit(helpImage,(WINDOW_SIZE//2-helpImage.get_width()//2,WINDOW_SIZE*0.2))
+    SURF.blit(help2Image,(WINDOW_SIZE//2-help2Image.get_width()//2,WINDOW_SIZE*0.25+helpImage.get_height()))
     
     keys = pg.key.get_pressed()
     for event in pg.event.get():
@@ -431,7 +450,7 @@ def main():
   global SURF,clock
   # pygame init
   pg.init()
-  SURF = pg.display.set_mode((WIDTH, HEIGHT))
+  SURF = pg.display.set_mode((WINDOW_SIZE, WINDOW_SIZE))
   pg.display.set_caption('Pong with a Twist!')
   clock = pg.time.Clock()
   changeState(GameState.MENU)
