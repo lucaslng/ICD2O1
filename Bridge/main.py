@@ -54,6 +54,7 @@ reloadIcon = pg.transform.smoothscale(pg.image.load("reload.png").convert_alpha(
 
 exitButtonRect = pg.rect.Rect(FRAME.right - LETTER_BUTTON_SIZE - LETTER_PADDING, FRAME.top + LETTER_PADDING, LETTER_BUTTON_SIZE, LETTER_BUTTON_SIZE)
 exitText = font40.render("X", True, black)
+
 def drawExitButton():
   if exitButtonRect.collidepoint(pg.mouse.get_pos()):
     pg.draw.rect(SURF, hoveredGray, exitButtonRect, border_radius=3)
@@ -97,14 +98,15 @@ def menu():
 
 def game():
   '''Game screen'''
-  global word, collapse, bridge, guesses, step, guessedLetters, lives
+  global changedWord, collapse, bridge, guesses, step, guessedLetters
   
   word = choice(words)
-  length = len(word)
-  lives = randint(4, 8)
+  changedWord = word
+  length = len(changedWord)
+  difficulty = randint(4, 8)
   guesses = "_" * length
-  collapse = length
-  bridge = "-" * length
+  collapse = difficulty
+  bridge = "-" * difficulty
   guess = ""
   guessedLetters = ""
   
@@ -121,24 +123,38 @@ def game():
   
   def doGuess(guess: str) -> str:
     '''Perform a guess based on the letter guessed'''
-    global word, collapse, bridge, guesses, step, guessedLetters, lives
-    if word.find(guess) != -1:
-      guesses = guesses[:word.find(guess)] + guess + guesses[word.find(guess)+1:]
-      word = word[:word.find(guess)] + "*" + word[word.find(guess)+1:]
-      step += 1
-      if step == len(word):
+    global changedWord, collapse, bridge, guesses, step, guessedLetters, lives
+    if changedWord.find(guess) != -1:
+      guesses = guesses[:changedWord.find(guess)] + guess + guesses[changedWord.find(guess)+1:]
+      changedWord = changedWord[:changedWord.find(guess)] + "*" + changedWord[changedWord.find(guess)+1:]
+      step += (difficulty + 2) / len(changedWord) * LETTER_BUTTON_SIZE # add two before diving to include the start and end position of the player
+      if step >= (difficulty + 2) * LETTER_BUTTON_SIZE:
         return "win"
     else:
       guessedLetters += guess
       collapse -= 1
-      lives -= 1
       bridge = bridge[:collapse] + "#"+ bridge[collapse+1:]
-      if lives <= 0:
+      if collapse <= 0:
         return "lose"
     return "continue"
   
   restartButtonRect = pg.rect.Rect(FRAME.right - 2 * (LETTER_BUTTON_SIZE + LETTER_PADDING), FRAME.top + LETTER_PADDING, LETTER_BUTTON_SIZE, LETTER_BUTTON_SIZE)
   restartText = font40.render("⟳", True, black)
+  
+  textBoxButtonRect = pg.rect.Rect((FRAME.right - 13 * (LETTER_BUTTON_SIZE + LETTER_PADDING)) / 2,
+                                  FRAME.height * 0.65,
+                                  13 * (LETTER_BUTTON_SIZE + LETTER_PADDING),
+                                  90
+                      )
+  isTyping = False
+  typedStr = ""
+  guessWordButtonRect = pg.rect.Rect(
+    (FRAME.centerx + 13 * (LETTER_BUTTON_SIZE + LETTER_PADDING) / 2) - LETTER_BUTTON_SIZE * 2 - LETTER_PADDING / 2,
+    FRAME.height * 0.65 + LETTER_PADDING / 2,
+    LETTER_BUTTON_SIZE * 2,
+    LETTER_BUTTON_SIZE * 2,
+  )
+  guessWordButtonIcon = font80.render("->", True, black)
   
   while True:
     SURF.fill(white)
@@ -149,29 +165,84 @@ def game():
         sys.exit()
       if event.type == pg.KEYDOWN:
         guess = pg.key.name(event.key).lower()
-        if guess in ALPHA and guess not in guessedLetters: # doing .isalpha() includes space so I did this instead
-          guessResult = doGuess(guess)
-          if guessResult != "continue":
-            return guessResult
-        else: guess = ""
+        if guess in ALPHA:
+          if isTyping:
+            if len(typedStr) < 16:
+              typedStr += guess
+          elif guess not in guessedLetters: # doing .isalpha() includes space so I did this instead
+            guessResult = doGuess(guess)
+            if guessResult != "continue":
+              return guessResult
+        if isTyping:
+          if guess == "backspace":
+            typedStr = typedStr[:-1]
+          elif guess == "return":
+            print(typedStr, word)
+            if typedStr == word:
+              return "win"
+            else:
+              collapse -= 1
+              bridge = bridge[:collapse] + "#"+ bridge[collapse+1:]
+              if collapse <= 0:
+                return "lose"
+      
+      clickedButton = False
       if pg.mouse.get_pressed()[0]:
         if exitButtonRect.collidepoint(pg.mouse.get_pos()):
           pg.quit()
           sys.exit()
-        if restartButtonRect.collidepoint(pg.mouse.get_pos()):
+        elif restartButtonRect.collidepoint(pg.mouse.get_pos()):
           return "game"
-      for i in range(len(letterButtons)):
-        if pg.mouse.get_pressed()[0] and letterButtons[i].collidepoint(pg.mouse.get_pos()):
-          guess = ALPHA[i]
-          if guess not in guessedLetters:
-            guessResult = doGuess(guess)
-            if guessResult != "continue":
-              return guessResult
-          else: guess = ""
+        elif guessWordButtonRect.collidepoint(pg.mouse.get_pos()):
+          clickedButton = True
+          if typedStr != "":
+            if typedStr == word:
+              return "win"
+            else:
+              collapse -= 1
+              bridge = bridge[:collapse] + "#"+ bridge[collapse+1:]
+              if collapse <= 0:
+                return "lose"
+          typedStr = ""
+        elif textBoxButtonRect.collidepoint(pg.mouse.get_pos()):
+          isTyping = True
+          clickedButton = True
+        for i in range(len(letterButtons)):
+          if letterButtons[i].collidepoint(pg.mouse.get_pos()):
+            clickedButton = True
+            guess = ALPHA[i]
+            if isTyping:
+              if len(typedStr) < 16:
+                typedStr += guess
+            else:
+              if guess not in guessedLetters:
+                guessResult = doGuess(guess)
+                if guessResult != "continue":
+                  return guessResult
+              else: guess = ""
+        if not clickedButton:
+          typedStr = ""
+          isTyping = False
     
-    guessLetterText = font80.render(("Guess a letter: " + guess), True, black)
-    SURF.blit(guessLetterText, ((FRAME.right - 13 * (LETTER_BUTTON_SIZE + LETTER_PADDING)) / 2, FRAME.height * 0.7))
+    # draw textbox
+    if (textBoxButtonRect.collidepoint(pg.mouse.get_pos()) and not guessWordButtonRect.collidepoint(pg.mouse.get_pos())) or isTyping:
+      pg.draw.rect(SURF, hoveredGray, textBoxButtonRect, border_radius=4)
+    pg.draw.rect(SURF, black, textBoxButtonRect, 3, 4)
+    if not isTyping:
+      guessLetterText = font80.render(("Guess the word"), True, disabledGray)
+    else:
+      guessLetterText = font80.render((typedStr), True, black)
+    SURF.blit(guessLetterText, (textBoxButtonRect.left + 20, textBoxButtonRect.top + guessLetterText.get_height() // 2))
     
+    if guessWordButtonRect.collidepoint(pg.mouse.get_pos()):
+      pg.draw.rect(SURF, hoveredGray, guessWordButtonRect, border_radius=4)
+    else:
+      pg.draw.rect(SURF, white, guessWordButtonRect, border_radius=4)
+    pg.draw.rect(SURF, black, guessWordButtonRect, 3, 4)
+    SURF.blit(guessWordButtonIcon, (guessWordButtonRect.left + LETTER_PADDING * 2, guessWordButtonRect.top + LETTER_PADDING))
+    
+    
+    # draw letter buttons
     for i in range(len(letterButtons)):
       if ALPHA[i] in guessedLetters:
         pg.draw.rect(SURF, disabledGray, letterButtons[i], border_radius=3)
@@ -181,26 +252,33 @@ def game():
       letter = font40.render(ALPHA[i].upper(), True, black)
       SURF.blit(letter, (letterButtons[i].centerx - letter.get_width() // 2, letterButtons[i].centery - letter.get_height() // 2))
 
+    # draw person and bridge
+    personText = font80.render("X", True, black)
+    bridgeStartPos = FRAME.centerx - difficulty * LETTER_BUTTON_SIZE // 2
+    bridgeEndPos = FRAME.centerx + difficulty * LETTER_BUTTON_SIZE // 2
+    SURF.blit(personText, (bridgeStartPos + step - LETTER_BUTTON_SIZE, FRAME.height * 0.2))
     
-    livesText = font80.render(("Lives: " + str(lives)), True, black)
-    guessesText = hanging80.render(guesses, True, black)
-    bridgeText = hanging80.render(bridge, True, black)
-    personText = font80.render(((step * " ") + "X"), True, black)
-    SURF.blit(livesText, ((FRAME.left + 120) / 2, FRAME.height * 0.1))
-    SURF.blit(personText, (FRAME.centerx - bridgeText.get_width() // 2, FRAME.height * 0.2))
-    SURF.blit(bridgeText, (FRAME.centerx - bridgeText.get_width() // 2, FRAME.height * 0.3))
-    SURF.blit(guessesText, (FRAME.centerx - guessesText.get_width() // 2, FRAME.height * 0.5))
+    # draw each character in the bridge separately because the characters have different width
+    for i in range(difficulty):
+      bridgeCharacter = hanging80.render(bridge[i], True, black)
+      SURF.blit(bridgeCharacter, (bridgeStartPos + i * LETTER_BUTTON_SIZE, FRAME.height * 0.3))
+    for i in range(length):
+      guessesCharacter = hanging80.render(guesses[i], True, black)
+      SURF.blit(guessesCharacter, (i * LETTER_BUTTON_SIZE*1.5 + FRAME.centerx - (length * LETTER_BUTTON_SIZE * 1.5 / 2), FRAME.height * 0.5))
+    
+    # triangles at the end of the bridge
     pg.draw.polygon(SURF, black, points = (
-                    (FRAME.centerx - bridgeText.get_width() // 2 - 10, FRAME.height * 0.37),
-                    (FRAME.centerx - bridgeText.get_width() // 2 - 10, FRAME.height * 0.42),
-                    (FRAME.centerx - bridgeText.get_width() // 2 - 80, FRAME.height * 0.42),
+                    (bridgeStartPos - 10, FRAME.height * 0.37),
+                    (bridgeStartPos - 10, FRAME.height * 0.42),
+                    (bridgeStartPos - 80, FRAME.height * 0.42),
                   ), width = 2)
     pg.draw.polygon(SURF, black, points = (
-                    (FRAME.centerx + bridgeText.get_width() // 2 + 10, FRAME.height * 0.37),
-                    (FRAME.centerx + bridgeText.get_width() // 2 + 10, FRAME.height * 0.42),
-                    (FRAME.centerx + bridgeText.get_width() // 2 + 80, FRAME.height * 0.42),
+                    (bridgeEndPos + 10, FRAME.height * 0.37),
+                    (bridgeEndPos + 10, FRAME.height * 0.42),
+                    (bridgeEndPos + 80, FRAME.height * 0.42),
                   ), width = 2)
 
+    # restart and exit buttons
     if restartButtonRect.collidepoint(pg.mouse.get_pos()):
       pg.draw.rect(SURF, hoveredGray, restartButtonRect, border_radius=3)
     pg.draw.rect(SURF, black, restartButtonRect, 2, 3)
