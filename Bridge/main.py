@@ -100,18 +100,18 @@ def game():
   '''Game screen'''
   global changedWord, collapse, bridge, guesses, step, guessedLetters
   
-  word = choice(words)
-  changedWord = word
-  length = len(changedWord)
-  difficulty = randint(4, 8)
-  guesses = "_" * length
-  collapse = difficulty
-  bridge = "-" * difficulty
-  guess = ""
-  guessedLetters = ""
+  word = choice(words) # random word out of list
+  changedWord = word # the word will be changed throughout the program to remember the guessed letters
+  length = len(changedWord) # length of word
+  difficulty = randint(4, 8) # number of incorrect answers allowed
+  guesses = "_" * length # show the letters the player has guessed
+  collapse = difficulty # the index where the bridge is collapsed, starts at the end of the bridge (no tiles collapsed)
+  bridge = "-" * difficulty # show the bridge
+  guess = "" # the player's guess
+  guessedLetters = "" # store the letters the player has guessed
+  step = 0 # the position the player is at
   
-  step = 0
-  
+  # create letter button rects in two rows
   letterButtons = [pg.rect.Rect( \
                       ((FRAME.right - 13 * (LETTER_BUTTON_SIZE + LETTER_PADDING)) / 2 + (i * (LETTER_BUTTON_SIZE + LETTER_PADDING) if i < 13 else (i - 13) * (LETTER_BUTTON_SIZE + LETTER_PADDING))),
                       FRAME.height * 0.8 if i < 13 else FRAME.height * 0.8 + (LETTER_BUTTON_SIZE + LETTER_PADDING),
@@ -139,7 +139,6 @@ def game():
     return "continue"
   
   restartButtonRect = pg.rect.Rect(FRAME.right - 2 * (LETTER_BUTTON_SIZE + LETTER_PADDING), FRAME.top + LETTER_PADDING, LETTER_BUTTON_SIZE, LETTER_BUTTON_SIZE)
-  restartText = font40.render("⟳", True, black)
   
   textBoxButtonRect = pg.rect.Rect((FRAME.right - 13 * (LETTER_BUTTON_SIZE + LETTER_PADDING)) / 2,
                                   FRAME.height * 0.65,
